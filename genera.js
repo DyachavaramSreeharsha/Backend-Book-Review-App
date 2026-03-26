@@ -1,80 +1,135 @@
 const express = require('express');
-let public_users = express.Router();
+const router = express.Router();
 
-// ✅ shared users
-const users = [];
-
-// ✅ shared books
-const books = {
+let books = {
   "1": { title: "Node Book", author: "John", reviews: {} },
   "2": { title: "Express Guide", author: "Mike", reviews: {} }
 };
 
-// get all books
-public_users.get('/', (req, res) => {
-  return res.send(JSON.stringify(books, null, 2));
+// Task 1: Get all books
+router.get('/', (req, res) => {
+  res.send(books);
 });
 
-// get by isbn
-public_users.get('/isbn/:isbn', (req, res) => {
-  return res.send(books[req.params.isbn]);
+// Task 2: Get book by ISBN
+router.get('/isbn/:isbn', (req, res) => {
+  res.send(books[req.params.isbn]);
 });
 
-// get by author
-public_users.get('/author/:author', (req, res) => {
-  const author = req.params.author;
+// Task 3: Get books by author
+router.get('/author/:author', (req, res) => {
   let result = {};
-
   for (let key in books) {
-    if (books[key].author === author) {
+    if (books[key].author === req.params.author) {
       result[key] = books[key];
     }
   }
-
-  return res.send(result);
+  res.send(result);
 });
 
-// get by title
-public_users.get('/title/:title', (req, res) => {
-  const title = req.params.title;
+// Task 4: Get books by title
+router.get('/title/:title', (req, res) => {
   let result = {};
-
   for (let key in books) {
-    if (books[key].title === title) {
+    if (books[key].title === req.params.title) {
       result[key] = books[key];
     }
   }
-
-  return res.send(result);
+  res.send(result);
 });
 
-// get reviews
-public_users.get('/review/:isbn', (req, res) => {
-  return res.send(books[req.params.isbn].reviews);
+// Task 5: Get book reviews
+router.get('/review/:isbn', (req, res) => {
+  res.send(books[req.params.isbn].reviews);
 });
 
-// register
-public_users.post('/register', (req, res) => {
-  const { username, password } = req.body;
+// Task 10: Async callback
+router.get('/asyncbooks', async (req, res) => {
+  const getBooks = () => {
+    return new Promise((resolve) => {
+      setTimeout(() => resolve(books), 1000);
+    });
+  };
 
-  if (!username || !password) {
-    return res.status(400).json({ message: "Username and password required" });
+  try {
+    const data = await getBooks();
+    res.send(data);
+  } catch {
+    res.status(500).send("Error");
   }
-
-  let exists = users.find(u => u.username === username);
-
-  if (exists) {
-    return res.status(409).json({ message: "User already exists" });
-  }
-
-  users.push({ username, password });
-
-  return res.json({ message: "User registered successfully" });
 });
 
-// export
-module.exports = {
-  general: public_users,
-  users: users,
-  books: books
-};
+// Task 11: Promise - search by ISBN
+router.get('/promise/isbn/:isbn', (req, res) => {
+  const getBookByISBN = (isbn) => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        if (books[isbn]) {
+          resolve(books[isbn]);
+        } else {
+          reject("Book not found");
+        }
+      }, 1000);
+    });
+  };
+
+  getBookByISBN(req.params.isbn)
+    .then((book) => res.send(book))
+    .catch((err) => res.status(404).send(err));
+});
+
+// Task 12: Promise - search by author
+router.get('/promise/author/:author', (req, res) => {
+  const getBooksByAuthor = (author) => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        let result = {};
+
+        for (let key in books) {
+          if (books[key].author === author) {
+            result[key] = books[key];
+          }
+        }
+
+        if (Object.keys(result).length > 0) {
+          resolve(result);
+        } else {
+          reject("No books found");
+        }
+      }, 1000);
+    });
+  };
+
+  getBooksByAuthor(req.params.author)
+    .then((data) => res.send(data))
+    .catch((err) => res.status(404).send(err));
+});
+
+// Task 13: Promise - search by title
+router.get('/promise/title/:title', (req, res) => {
+  const getBooksByTitle = (title) => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        let result = {};
+
+        for (let key in books) {
+          if (books[key].title === title) {
+            result[key] = books[key];
+          }
+        }
+
+        if (Object.keys(result).length > 0) {
+          resolve(result);
+        } else {
+          reject("No books found");
+        }
+      }, 1000);
+    });
+  };
+
+  getBooksByTitle(req.params.title)
+    .then((data) => res.send(data))
+    .catch((err) => res.status(404).send(err));
+});
+
+module.exports = router;
